@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Module 1 — Data Preprocessing &amp; Feature Engineering · Study Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF5EC;
+    --paper-2:#F3EBDC;
+    --ink:#2A2419;
+    --ink-soft:#5C5345;
+    --line:#E2D6C0;
+    --teal:#0B6B5B;
+    --teal-soft:#E1EFE9;
+    --amber:#C2691A;
+    --amber-soft:#F7E8D3;
+    --blue:#2D5BA8;
+    --blue-soft:#E2EAF6;
+    --rose:#B23A48;
+    --rose-soft:#F6E1E2;
+    --violet:#6A4C93;
+    --violet-soft:#ECE5F4;
+    --shadow:rgba(42,36,25,.10);
+    --maxw:1180px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Newsreader",Georgia,serif;font-size:18.5px;line-height:1.68;
+    -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(var(--line) 0.6px, transparent 0.6px);
+    background-size:26px 26px;
+  }
+  /* progress bar */
+  #progress{position:fixed;top:0;left:0;height:4px;width:0;
+    background:linear-gradient(90deg,var(--teal),var(--amber));z-index:200;transition:width .1s linear;}
+
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px;}
+  .layout{display:grid;grid-template-columns:248px 1fr;gap:48px;align-items:start;}
+
+  /* ---------- HERO ---------- */
+  header.hero{position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#0B6B5B 0%,#0E4A47 55%,#102E33 100%);
+    color:#F6EEDD;padding:74px 0 64px;border-bottom:5px solid var(--amber);}
+  header.hero::before{content:"";position:absolute;inset:0;opacity:.18;
+    background:radial-gradient(circle at 82% 18%, #6FD3BE 0, transparent 42%),
+              radial-gradient(circle at 12% 88%, #C2691A 0, transparent 38%);}
+  .hero .wrap{position:relative;z-index:2;}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:12.5px;letter-spacing:.32em;
+    text-transform:uppercase;color:#9FE0CF;margin:0 0 14px;}
+  header.hero h1{font-family:"Fraunces",serif;font-weight:900;font-size:clamp(2.3rem,5.4vw,4rem);
+    line-height:1.02;margin:0 0 18px;letter-spacing:-.02em;}
+  header.hero h1 em{font-style:italic;color:#F4C98A;}
+  .hero-sub{font-size:1.18rem;max-width:640px;color:#E7DCC6;margin:0 0 26px;}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:10px;}
+  .pill{font-family:"JetBrains Mono",monospace;font-size:11.5px;letter-spacing:.06em;
+    background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);
+    padding:7px 13px;border-radius:30px;color:#EBE0CB;}
+
+  /* ---------- SIDEBAR ---------- */
+  nav.toc{position:sticky;top:24px;font-family:"Newsreader",serif;
+    border-right:1px solid var(--line);padding:30px 14px 30px 0;}
+  nav.toc h4{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--amber);margin:0 0 14px;}
+  nav.toc a{display:block;text-decoration:none;color:var(--ink-soft);font-size:15.5px;
+    padding:6px 12px;border-radius:7px;border-left:2px solid transparent;margin-bottom:2px;
+    transition:all .15s;line-height:1.3;}
+  nav.toc a:hover{color:var(--ink);background:var(--paper-2);}
+  nav.toc a.active{color:var(--teal);border-left-color:var(--teal);background:var(--teal-soft);font-weight:600;}
+
+  /* ---------- CONTENT ---------- */
+  main{padding:42px 0 90px;min-width:0;}
+  section{margin-bottom:30px;scroll-margin-top:18px;}
+  .sec-num{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--amber);
+    letter-spacing:.18em;font-weight:700;}
+  h2{font-family:"Fraunces",serif;font-weight:700;font-size:clamp(1.7rem,3.5vw,2.5rem);
+    line-height:1.08;margin:6px 0 8px;letter-spacing:-.015em;}
+  h3{font-family:"Fraunces",serif;font-weight:600;font-size:1.45rem;margin:34px 0 6px;color:var(--ink);}
+  h4{font-family:"Fraunces",serif;font-weight:600;font-size:1.12rem;margin:22px 0 4px;}
+  p{margin:0 0 15px;}
+  strong{font-weight:600;color:#1c1810;}
+  a.inline{color:var(--teal);}
+  hr.rule{border:none;border-top:2px dotted var(--line);margin:40px 0;}
+  .lead{font-size:1.22rem;color:var(--ink-soft);max-width:62ch;margin-bottom:24px;}
+
+  ul,ol{margin:0 0 16px;padding-left:1.3em;}
+  li{margin-bottom:7px;}
+
+  /* ---------- CALLOUTS ---------- */
+  .box{border-radius:14px;padding:20px 22px 18px;margin:22px 0;position:relative;
+    border:1px solid var(--line);box-shadow:0 4px 18px var(--shadow);}
+  .box .tag{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;font-weight:700;display:inline-flex;align-items:center;gap:7px;
+    margin-bottom:8px;}
+  .box p:last-child{margin-bottom:0;}
+  .box .ico{font-size:1.15em;}
+  .analogy{background:var(--amber-soft);border-color:#E9CFA8;}
+  .analogy .tag{color:var(--amber);}
+  .key{background:var(--teal-soft);border-color:#BEDDD3;}
+  .key .tag{color:var(--teal);}
+  .example{background:var(--blue-soft);border-color:#C5D3EC;}
+  .example .tag{color:var(--blue);}
+  .warn{background:var(--rose-soft);border-color:#EBC4C7;}
+  .warn .tag{color:var(--rose);}
+  .quiz{background:var(--violet-soft);border-color:#D6C9E6;}
+  .quiz .tag{color:var(--violet);}
+
+  /* ---------- CODE ---------- */
+  pre{background:#1E2A2A;color:#E4EDE9;border-radius:12px;padding:18px 20px;overflow-x:auto;
+    font-family:"JetBrains Mono",monospace;font-size:14px;line-height:1.6;margin:18px 0;
+    border:1px solid #0d1717;box-shadow:0 6px 22px rgba(16,46,51,.25);}
+  pre .c{color:#7FB6A5;font-style:italic;}      /* comment */
+  pre .k{color:#F4C98A;}                          /* keyword */
+  pre .s{color:#9FD3C0;}                          /* string */
+  pre .f{color:#86B7E8;}                          /* func */
+  code.ic{background:var(--paper-2);border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;font-family:"JetBrains Mono",monospace;font-size:.85em;color:#1c4a40;}
+
+  /* ---------- TABLES ---------- */
+  .tbl{width:100%;border-collapse:collapse;margin:20px 0;font-size:15.5px;
+    background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px var(--shadow);}
+  .tbl th{background:var(--teal);color:#F4EEDF;text-align:left;padding:11px 15px;
+    font-family:"Fraunces",serif;font-weight:600;font-size:15px;}
+  .tbl td{padding:10px 15px;border-top:1px solid var(--line);vertical-align:top;}
+  .tbl tr:nth-child(even) td{background:var(--paper);}
+
+  /* ---------- CARDS GRID ---------- */
+  .grid{display:grid;gap:16px;margin:22px 0;}
+  .g2{grid-template-columns:repeat(2,1fr);}
+  .g3{grid-template-columns:repeat(3,1fr);}
+  .g4{grid-template-columns:repeat(4,1fr);}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;
+    box-shadow:0 3px 12px var(--shadow);}
+  .card .ct{font-family:"Fraunces",serif;font-weight:600;font-size:1.05rem;margin:0 0 4px;color:var(--teal);}
+  .card.amber .ct{color:var(--amber);}
+  .card.blue .ct{color:var(--blue);}
+  .card.violet .ct{color:var(--violet);}
+  .card p{font-size:14.5px;margin:0;color:var(--ink-soft);}
+  .num-badge{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:11px;
+    background:var(--paper-2);border:1px solid var(--line);border-radius:6px;padding:1px 7px;
+    color:var(--amber);font-weight:700;margin-bottom:6px;}
+
+  /* SVG figures */
+  figure{margin:24px 0;text-align:center;}
+  figure svg{max-width:100%;height:auto;background:#fff;border:1px solid var(--line);
+    border-radius:14px;padding:14px;box-shadow:0 4px 16px var(--shadow);}
+  figcaption{font-size:14px;color:var(--ink-soft);font-style:italic;margin-top:8px;}
+
+  /* quiz reveal */
+  details.q{background:#fff;border:1px solid var(--line);border-left:3px solid var(--violet);
+    border-radius:10px;padding:13px 18px;margin:12px 0;box-shadow:0 2px 10px var(--shadow);}
+  details.q summary{cursor:pointer;font-weight:600;color:var(--ink);list-style:none;
+    font-family:"Fraunces",serif;font-size:1.04rem;}
+  details.q summary::-webkit-details-marker{display:none;}
+  details.q summary::before{content:"▸ ";color:var(--violet);}
+  details.q[open] summary::before{content:"▾ ";}
+  details.q .ans{margin-top:10px;color:var(--ink-soft);font-size:15.5px;
+    border-top:1px dotted var(--line);padding-top:10px;}
+
+  footer{background:#102E33;color:#cdbfa6;padding:32px 0;font-size:14px;text-align:center;
+    font-family:"JetBrains Mono",monospace;letter-spacing:.04em;}
+  footer a{color:#9FE0CF;}
+
+  @media(max-width:880px){
+    .layout{grid-template-columns:1fr;}
+    nav.toc{display:none;}
+    .g2,.g3,.g4{grid-template-columns:1fr;}
+    body{font-size:17.5px;}
+  }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">PG Program in Generative AI &amp; ML · Module 1</p>
+    <h1>Data Preprocessing &amp;<br><em>Feature Engineering</em></h1>
+    <p class="hero-sub">The complete, plain-English study notes — every idea explained with an analogy,
+    a picture, and a worked example, so it actually <em>sticks</em>.</p>
+    <div class="hero-meta">
+      <span class="pill">🧹 Cleaning data</span>
+      <span class="pill">📏 Scaling features</span>
+      <span class="pill">🔢 Encoding</span>
+      <span class="pill">🔍 EDA</span>
+      <span class="pill">🛠️ Feature engineering</span>
+      <span class="pill">🧪 3 hands-on demos</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="toc">
+    <h4>Contents</h4>
+    <a href="#big-picture">0 · The big picture</a>
+    <a href="#what-ml">1 · What is ML?</a>
+    <a href="#types">2 · Types of ML</a>
+    <a href="#pipeline">3 · The ML pipeline</a>
+    <a href="#quality">4 · Why data quality</a>
+    <a href="#missing">5 · Missing data</a>
+    <a href="#outliers">6 · Outliers</a>
+    <a href="#encoding">7 · Encoding categories</a>
+    <a href="#scaling">8 · Feature scaling</a>
+    <a href="#split">9 · Train-test split</a>
+    <a href="#eda">10 · EDA &amp; imbalance</a>
+    <a href="#fe">11 · Feature engineering</a>
+    <a href="#selection">12 · Feature selection</a>
+    <a href="#multicol">13 · Multicollinearity</a>
+    <a href="#transform">14 · Transformations</a>
+    <a href="#dimred">15 · PCA &amp; t-SNE</a>
+    <a href="#demos">16 · The 3 demos</a>
+    <a href="#cheat">17 · Cheat sheet</a>
+    <a href="#quiz">18 · Self-check</a>
+  </nav>
+
+  <!-- MAIN -->
+  <main>
+
+  <!-- 0 -->
+  <section id="big-picture">
+    <span class="sec-num">SECTION 00</span>
+    <h2>The big picture (read this first)</h2>
+    <p class="lead">Before any model can be smart, the data has to be clean, fair, and on the same
+    "scale." Module 1 is the unglamorous-but-decisive work that happens <em>before</em> training.</p>
+    <p>Think of building a model like building a house. Everyone wants to talk about the fancy
+    architecture (the algorithm), but the <strong>foundation</strong> is the data work. A beautiful house on a
+    cracked foundation collapses. In ML there's even a saying for this:</p>
+    <div class="box key">
+      <span class="tag"><span class="ico">🔑</span> Key idea</span>
+      <p><strong>Garbage In, Garbage Out (GIGO).</strong> A model can only be as good as the data you feed it.
+      Most real ML effort (~80%) is spent on cleaning and preparing data — not on the model itself.</p>
+    </div>
+    <p>This module walks through that 80% in order: understand ML → clean the data
+    (missing values, outliers) → make it model-ready (encoding, scaling) → explore it (EDA) →
+    sharpen it (feature engineering).</p>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 1 -->
+  <section id="what-ml">
+    <span class="sec-num">SECTION 01</span>
+    <h2>What is Machine Learning?</h2>
+    <p>Machine Learning is a branch of AI where systems <strong>learn patterns from data</strong> and improve
+    with experience — instead of being given explicit step-by-step rules.</p>
+
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — teaching a kid "what's a dog"</span>
+      <p><strong>Traditional programming:</strong> you write rules — "if it has four legs AND fur AND barks,
+      it's a dog." You'll be writing exceptions forever (what about a barking cat video?).<br>
+      <strong>Machine learning:</strong> you show the child 1,000 photos labelled dog / not-dog. The child
+      figures out the pattern on their own — and gets better the more photos they see.</p>
+    </div>
+
+    <table class="tbl">
+      <tr><th>Aspect</th><th>Traditional Programming</th><th>Machine Learning</th></tr>
+      <tr><td>Approach</td><td>You write explicit rules</td><td>It learns patterns from data</td></tr>
+      <tr><td>Flexibility</td><td>Static — update rules by hand</td><td>Adaptive — improves with more data</td></tr>
+      <tr><td>Best at</td><td>Sorting, tax calculation</td><td>Image recognition, fraud, NLP, self-driving</td></tr>
+    </table>
+
+    <h4>The flow, in three words</h4>
+    <figure>
+      <svg viewBox="0 0 720 130" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Data to Model to Prediction flow">
+        <defs><marker id="ar" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#0B6B5B"/></marker></defs>
+        <g font-family="Fraunces, serif" font-size="17" text-anchor="middle">
+          <rect x="30" y="35" width="160" height="60" rx="12" fill="#E1EFE9" stroke="#0B6B5B"/>
+          <text x="110" y="62" fill="#0B6B5B" font-weight="600">📊 Data</text>
+          <text x="110" y="82" font-size="12" fill="#5C5345" font-family="Newsreader">raw examples</text>
+          <line x1="195" y1="65" x2="265" y2="65" stroke="#0B6B5B" stroke-width="2" marker-end="url(#ar)"/>
+          <rect x="280" y="35" width="160" height="60" rx="12" fill="#F7E8D3" stroke="#C2691A"/>
+          <text x="360" y="62" fill="#C2691A" font-weight="600">⚙️ Build model</text>
+          <text x="360" y="82" font-size="12" fill="#5C5345" font-family="Newsreader">learn the pattern</text>
+          <line x1="445" y1="65" x2="515" y2="65" stroke="#0B6B5B" stroke-width="2" marker-end="url(#ar)"/>
+          <rect x="530" y="35" width="160" height="60" rx="12" fill="#E2EAF6" stroke="#2D5BA8"/>
+          <text x="610" y="62" fill="#2D5BA8" font-weight="600">🔮 Predict</text>
+          <text x="610" y="82" font-size="12" fill="#5C5345" font-family="Newsreader">on new data</text>
+        </g>
+      </svg>
+      <figcaption>Every ML system is just: feed data → learn a pattern → use it to predict.</figcaption>
+    </figure>
+
+    <h4>Three core components (the engine room)</h4>
+    <div class="grid g3">
+      <div class="card"><span class="num-badge">01</span><p class="ct">Representation</p><p>How data is stored for the machine — vectors, matrices, graphs.</p></div>
+      <div class="card amber"><span class="num-badge">02</span><p class="ct">Evaluation</p><p>How we score the model — accuracy, RMSE, precision, recall.</p></div>
+      <div class="card blue"><span class="num-badge">03</span><p class="ct">Optimization</p><p>How it improves — gradient descent, hyperparameter tuning.</p></div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 2 -->
+  <section id="types">
+    <span class="sec-num">SECTION 02</span>
+    <h2>The four types of ML</h2>
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — four ways to learn</span>
+      <p><strong>Supervised</strong> = studying with an answer key (you see questions <em>and</em> answers).<br>
+      <strong>Unsupervised</strong> = sorting a messy drawer with no labels — you just group similar things.<br>
+      <strong>Reinforcement</strong> = training a dog with treats — try, get reward/penalty, adjust.<br>
+      <strong>Semi-supervised</strong> = a few labelled answers + a big pile of unlabelled ones.</p>
+    </div>
+    <table class="tbl">
+      <tr><th>Type</th><th>Has labels?</th><th>Goal</th><th>Example</th></tr>
+      <tr><td><strong>Supervised</strong></td><td>Yes</td><td>Predict a known target</td><td>Spam / not-spam, house price</td></tr>
+      <tr><td><strong>Unsupervised</strong></td><td>No</td><td>Find hidden structure</td><td>Customer segmentation</td></tr>
+      <tr><td><strong>Reinforcement</strong></td><td>Reward signal</td><td>Learn by trial &amp; error</td><td>Game-playing AI, robotics</td></tr>
+      <tr><td><strong>Semi-supervised</strong></td><td>A few</td><td>Use small labels + big unlabelled</td><td>Medical images</td></tr>
+    </table>
+    <div class="box key">
+      <span class="tag"><span class="ico">🔑</span> Key terms to memorise</span>
+      <p><strong>Features</strong> = the input columns (the clues). <strong>Label / target</strong> = the answer you want
+      to predict. <strong>Model</strong> = the learned pattern. <strong>Training data</strong> = the examples used to teach it.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 3 -->
+  <section id="pipeline">
+    <span class="sec-num">SECTION 03</span>
+    <h2>The Machine Learning pipeline</h2>
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — cooking a meal</span>
+      <p>You don't throw raw groceries into a pot. You <em>shop</em> (collect), <em>wash &amp; chop</em>
+      (preprocess), <em>season</em> (feature engineering), <em>cook</em> (train), <em>taste</em> (evaluate),
+      then <em>serve</em> (deploy). Skip the washing and the whole dish is ruined.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ML pipeline stages">
+        <defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5C5345"/></marker></defs>
+        <g font-family="Newsreader, serif" font-size="13" text-anchor="middle">
+          <g>
+            <rect x="20"  y="20" width="150" height="56" rx="10" fill="#E1EFE9" stroke="#0B6B5B"/><text x="95"  y="44" font-weight="600" font-family="Fraunces">1 · Collect</text><text x="95" y="62" font-size="11" fill="#5C5345">gather raw data</text>
+            <rect x="285" y="20" width="150" height="56" rx="10" fill="#E1EFE9" stroke="#0B6B5B"/><text x="360" y="44" font-weight="600" font-family="Fraunces">2 · Preprocess</text><text x="360" y="62" font-size="11" fill="#5C5345">clean / encode</text>
+            <rect x="550" y="20" width="150" height="56" rx="10" fill="#E1EFE9" stroke="#0B6B5B"/><text x="625" y="44" font-weight="600" font-family="Fraunces">3 · Feature eng.</text><text x="625" y="62" font-size="11" fill="#5C5345">build variables</text>
+            <rect x="550" y="140" width="150" height="56" rx="10" fill="#F7E8D3" stroke="#C2691A"/><text x="625" y="164" font-weight="600" font-family="Fraunces">4 · Train</text><text x="625" y="182" font-size="11" fill="#5C5345">fit the model</text>
+            <rect x="285" y="140" width="150" height="56" rx="10" fill="#F7E8D3" stroke="#C2691A"/><text x="360" y="164" font-weight="600" font-family="Fraunces">5 · Evaluate</text><text x="360" y="182" font-size="11" fill="#5C5345">test data</text>
+            <rect x="20"  y="140" width="150" height="56" rx="10" fill="#E2EAF6" stroke="#2D5BA8"/><text x="95"  y="164" font-weight="600" font-family="Fraunces">6 · Deploy</text><text x="95" y="182" font-size="11" fill="#5C5345">real world</text>
+          </g>
+          <line x1="170" y1="48" x2="280" y2="48" stroke="#5C5345" marker-end="url(#ar2)"/>
+          <line x1="435" y1="48" x2="545" y2="48" stroke="#5C5345" marker-end="url(#ar2)"/>
+          <line x1="625" y1="76" x2="625" y2="135" stroke="#5C5345" marker-end="url(#ar2)"/>
+          <line x1="550" y1="168" x2="440" y2="168" stroke="#5C5345" marker-end="url(#ar2)"/>
+          <line x1="285" y1="168" x2="175" y2="168" stroke="#5C5345" marker-end="url(#ar2)"/>
+        </g>
+      </svg>
+      <figcaption>Module 1 lives mostly in stages 2 &amp; 3 — the prep that makes everything downstream work.</figcaption>
+    </figure>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 4 -->
+  <section id="quality">
+    <span class="sec-num">SECTION 04</span>
+    <h2>Why data quality is everything</h2>
+    <p>Clean, relevant data is the difference between a model that generalises and one that memorises noise.</p>
+    <div class="grid g3">
+      <div class="card"><p class="ct">✅ Accuracy</p><p>Clean data → better generalisation to new cases.</p></div>
+      <div class="card amber"><p class="ct">🛡️ Robustness</p><p>Good data performs well on messy, real-world inputs.</p></div>
+      <div class="card blue"><p class="ct">🚫 Prevents overfitting</p><p>Noisy data tricks the model into learning junk patterns.</p></div>
+      <div class="card violet"><p class="ct">⚖️ Less bias</p><p>Incomplete data skews predictions unfairly.</p></div>
+      <div class="card"><p class="ct">🔍 Interpretable</p><p>Well-structured data is easier to reason about.</p></div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 5 -->
+  <section id="missing">
+    <span class="sec-num">SECTION 05</span>
+    <h2>Handling missing data</h2>
+    <p>Real datasets are full of holes — people skip the "income" field, sensors drop readings.
+    A blank cell (<code class="ic">NaN</code>) will crash or mislead most models, so we either <strong>fill it</strong>
+    (impute) or <strong>drop it</strong>.</p>
+
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — a missing exam mark</span>
+      <p>A student missed one test. Do you give them a <strong>0</strong> (drop / penalise), the <strong>class average</strong>
+      (mean imputation), the <strong>middle score</strong> (median — fair when a few geniuses skew the average),
+      or the <strong>most common grade</strong> (mode)? The choice depends on the situation — exactly like imputation.</p>
+    </div>
+
+    <h3>The three imputation flavours</h3>
+    <table class="tbl">
+      <tr><th>Method</th><th>Fills with…</th><th>Best for</th></tr>
+      <tr><td><strong>Mean</strong></td><td>The average</td><td>Roughly symmetric numeric data</td></tr>
+      <tr><td><strong>Median</strong></td><td>The middle value</td><td><strong>Skewed</strong> data or data with outliers (income!)</td></tr>
+      <tr><td><strong>Mode</strong></td><td>The most frequent value</td><td>Categorical data (e.g. "city")</td></tr>
+    </table>
+    <div class="box key">
+      <span class="tag"><span class="ico">🔑</span> Why income uses the median</span>
+      <p>A handful of millionaires drag the <em>mean</em> income way up, so it no longer represents a typical
+      person. The <em>median</em> ignores how extreme the extremes are — it's just "the person in the middle."</p>
+    </div>
+
+    <h3>Looking at more than one column: uni / bi / multivariate</h3>
+    <div class="grid g3">
+      <div class="card"><p class="ct">Univariate</p><p>Fill using <strong>only that column</strong> (its mean/median/mode). Treats each gap independently.</p></div>
+      <div class="card amber"><p class="ct">Bivariate</p><p>Fill using the relationship with <strong>one other column</strong> (e.g. predict temperature from humidity).</p></div>
+      <div class="card blue"><p class="ct">Multivariate</p><p>Fill using <strong>many columns</strong> together — often a small regression/ML model predicting the gap.</p></div>
+    </div>
+
+    <h4>Code (the modern, safe way)</h4>
+<pre><span class="c"># Fill missing Income with the median (good for skewed data)</span>
+df[<span class="s">'Income'</span>] = df[<span class="s">'Income'</span>].<span class="f">fillna</span>(df[<span class="s">'Income'</span>].<span class="f">median</span>())
+
+<span class="c"># Drop rows only if too much is missing in a column</span>
+df = df.<span class="f">dropna</span>(subset=[<span class="s">'Income'</span>])   <span class="c"># use sparingly</span></pre>
+
+    <div class="box warn">
+      <span class="tag"><span class="ico">⚠️</span> Watch out — the classic <code class="ic">inplace</code> trap</span>
+      <p>In the Demo 1 notebook, <code class="ic">df['Income'].fillna(..., inplace=True)</code> printed a warning and
+      the missing count <em>stayed at 5</em> — the fill silently didn't apply. Modern pandas (Copy-on-Write)
+      treats <code class="ic">df['col']</code> as a temporary copy, so <code class="ic">inplace</code> edits vanish.
+      <strong>Always reassign:</strong> <code class="ic">df['col'] = df['col'].fillna(value)</code>.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 6 -->
+  <section id="outliers">
+    <span class="sec-num">SECTION 06</span>
+    <h2>Detecting &amp; handling outliers</h2>
+    <p>An <strong>outlier</strong> is a value that sits far away from the rest — a ₹50,00,000 purchase among
+    ₹500 ones. It might be a fraud signal, or just a typo. Either way it can wildly distort a model.</p>
+
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — the billionaire in the room</span>
+      <p>Ten people in a room earn ~₹50k/month. Bill Gates walks in. The <em>average</em> wealth now says
+      everyone's a billionaire — clearly nonsense. One outlier hijacked the statistic. Models get fooled the same way.</p>
+    </div>
+
+    <h3>Two ways to detect</h3>
+    <div class="grid g2">
+      <div class="card">
+        <p class="ct">Z-score</p>
+        <p>How many standard deviations from the mean? <code class="ic">Z = (X − μ) / σ</code>.
+        Usually <strong>|Z| &gt; 3</strong> = outlier. Best when data is roughly normal (bell-shaped).</p>
+      </div>
+      <div class="card amber">
+        <p class="ct">IQR (Interquartile Range)</p>
+        <p><code class="ic">IQR = Q3 − Q1</code>. Anything below <strong>Q1 − 1.5·IQR</strong> or above
+        <strong>Q3 + 1.5·IQR</strong> is an outlier. Robust — doesn't care about extreme values.</p>
+      </div>
+    </div>
+
+    <figure>
+      <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="IQR boxplot with fences">
+        <g font-family="Newsreader, serif" font-size="12">
+          <line x1="60" y1="100" x2="660" y2="100" stroke="#E2D6C0" stroke-width="2"/>
+          <!-- whiskers -->
+          <line x1="150" y1="80" x2="150" y2="120" stroke="#0B6B5B" stroke-width="2"/>
+          <line x1="150" y1="100" x2="280" y2="100" stroke="#0B6B5B" stroke-width="2"/>
+          <line x1="500" y1="100" x2="560" y2="100" stroke="#0B6B5B" stroke-width="2"/>
+          <line x1="560" y1="80" x2="560" y2="120" stroke="#0B6B5B" stroke-width="2"/>
+          <!-- box -->
+          <rect x="280" y="72" width="220" height="56" rx="4" fill="#E1EFE9" stroke="#0B6B5B" stroke-width="2"/>
+          <line x1="390" y1="72" x2="390" y2="128" stroke="#C2691A" stroke-width="3"/>
+          <!-- outliers -->
+          <circle cx="630" cy="100" r="6" fill="#B23A48"/>
+          <circle cx="90" cy="100" r="6" fill="#B23A48"/>
+          <!-- labels -->
+          <text x="280" y="150" text-anchor="middle">Q1</text>
+          <text x="390" y="150" text-anchor="middle" fill="#C2691A">median</text>
+          <text x="500" y="150" text-anchor="middle">Q3</text>
+          <text x="150" y="64" text-anchor="middle" fill="#0B6B5B">lower fence</text>
+          <text x="560" y="64" text-anchor="middle" fill="#0B6B5B">upper fence</text>
+          <text x="630" y="80" text-anchor="middle" fill="#B23A48">outlier ⚑</text>
+          <text x="90"  y="80" text-anchor="middle" fill="#B23A48">outlier ⚑</text>
+          <text x="390" y="180" text-anchor="middle" fill="#5C5345" font-style="italic">The box = middle 50% of data. Dots past the fences = outliers.</text>
+        </g>
+      </svg>
+    </figure>
+
+    <h3>What to do once you find them</h3>
+    <table class="tbl">
+      <tr><th>Situation</th><th>Best fix</th></tr>
+      <tr><td>Clearly a data-entry error</td><td>Remove it</td></tr>
+      <tr><td>Right-skewed data (income)</td><td>Log transformation</td></tr>
+      <tr><td>Outliers are real &amp; informative</td><td>Winsorization / Clipping (cap to the fence)</td></tr>
+      <tr><td>Small dataset (can't lose rows)</td><td>Replace with median</td></tr>
+    </table>
+    <p><strong>Capping (clipping)</strong> means: anything above the upper fence becomes the upper fence value;
+    anything below the lower fence becomes the lower fence. You keep the row but tame the extreme.</p>
+<pre><span class="c"># Cap a column to its IQR fences</span>
+Q1, Q3 = df[col].<span class="f">quantile</span>(.25), df[col].<span class="f">quantile</span>(.75)
+IQR = Q3 - Q1
+low, high = Q1 - <span class="k">1.5</span>*IQR, Q3 + <span class="k">1.5</span>*IQR
+df[col] = np.<span class="f">where</span>(df[col] &gt; high, high,
+          np.<span class="f">where</span>(df[col] &lt; low, low, df[col]))</pre>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 7 -->
+  <section id="encoding">
+    <span class="sec-num">SECTION 07</span>
+    <h2>Encoding categorical variables</h2>
+    <p>Models speak only numbers. Words like <em>"Mumbai"</em> or <em>"Gold member"</em> must become numeric.</p>
+
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — don't accidentally rank your fruits</span>
+      <p>If you label Apple=1, Banana=2, Cherry=3, the model thinks <em>Cherry &gt; Banana &gt; Apple</em> and that
+      Apple+Apple = Banana. That ordering is fake! For unordered categories use <strong>One-Hot Encoding</strong>,
+      which gives each category its own yes/no light switch instead of a rank.</p>
+    </div>
+
+    <h3>One-Hot Encoding — a switch per category</h3>
+    <p>It creates one new binary column per category: <strong>1</strong> = present, <strong>0</strong> = absent.</p>
+    <figure>
+      <svg viewBox="0 0 720 190" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="One hot encoding transformation">
+        <g font-family="JetBrains Mono, monospace" font-size="13">
+          <text x="120" y="28" font-family="Fraunces" font-size="15" text-anchor="middle" fill="#0B6B5B">Before</text>
+          <rect x="40" y="42" width="160" height="120" rx="8" fill="#fff" stroke="#E2D6C0"/>
+          <text x="120" y="64" text-anchor="middle" font-weight="700">Region</text>
+          <line x1="40" y1="74" x2="200" y2="74" stroke="#E2D6C0"/>
+          <text x="120" y="98" text-anchor="middle">North</text>
+          <text x="120" y="124" text-anchor="middle">South</text>
+          <text x="120" y="150" text-anchor="middle">North</text>
+
+          <text x="360" y="105" font-size="26" text-anchor="middle" fill="#C2691A">➜</text>
+
+          <text x="560" y="28" font-family="Fraunces" font-size="15" text-anchor="middle" fill="#2D5BA8">After</text>
+          <rect x="430" y="42" width="260" height="120" rx="8" fill="#fff" stroke="#E2D6C0"/>
+          <text x="500" y="64" text-anchor="middle" font-weight="700">North</text>
+          <text x="620" y="64" text-anchor="middle" font-weight="700">South</text>
+          <line x1="430" y1="74" x2="690" y2="74" stroke="#E2D6C0"/>
+          <text x="500" y="98" text-anchor="middle" fill="#0B6B5B">1</text><text x="620" y="98" text-anchor="middle">0</text>
+          <text x="500" y="124" text-anchor="middle">0</text><text x="620" y="124" text-anchor="middle" fill="#0B6B5B">1</text>
+          <text x="500" y="150" text-anchor="middle" fill="#0B6B5B">1</text><text x="620" y="150" text-anchor="middle">0</text>
+        </g>
+      </svg>
+    </figure>
+
+    <div class="box warn">
+      <span class="tag"><span class="ico">⚠️</span> The dummy-variable trap</span>
+      <p>If you keep a column for <em>every</em> category, they become perfectly predictable from each other
+      (if it's not North, it must be South) — that's <strong>multicollinearity</strong>. Fix: drop one column
+      with <code class="ic">drop="first"</code>. The dropped category becomes the silent baseline.</p>
+    </div>
+
+    <h4>One-Hot vs Label Encoding</h4>
+    <table class="tbl">
+      <tr><th></th><th>One-Hot Encoding</th><th>Label Encoding</th></tr>
+      <tr><td>What it does</td><td>One 0/1 column per category</td><td>Assigns each category a number (0,1,2…)</td></tr>
+      <tr><td>Use when</td><td>Categories have <strong>no order</strong> (city, colour)</td><td>Categories <strong>have order</strong> (Low&lt;Med&lt;High)</td></tr>
+      <tr><td>Risk</td><td>Many columns if many categories</td><td>Invents a fake ranking if misused</td></tr>
+    </table>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 8 -->
+  <section id="scaling">
+    <span class="sec-num">SECTION 08</span>
+    <h2>Feature scaling</h2>
+    <p>Income is in the tens of thousands; a debt-to-income ratio is between 0 and 1. Left alone, the model
+    thinks income is "1000× more important" simply because its <em>numbers</em> are bigger. Scaling puts every
+    feature on a fair playing field.</p>
+
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — comparing height in cm vs metres</span>
+      <p>Imagine ranking people where height is in centimetres (170) but weight is in tonnes (0.07). Height
+      would dominate purely because of its unit. Scaling is like converting everyone to the same units so the
+      comparison is fair.</p>
+    </div>
+
+    <table class="tbl">
+      <tr><th>Aspect</th><th>Normalization (MinMaxScaler)</th><th>Standardization (StandardScaler)</th></tr>
+      <tr><td>Does what</td><td>Squeezes values into a fixed range, usually <strong>[0, 1]</strong></td><td>Centres data to <strong>mean = 0, variance = 1</strong> (Z-score)</td></tr>
+      <tr><td>Formula</td><td><code class="ic">(x − min) / (max − min)</code></td><td><code class="ic">(x − mean) / std</code></td></tr>
+      <tr><td>Outliers</td><td><strong>Sensitive</strong> — one giant value squashes everything else</td><td><strong>Less sensitive</strong> — more robust</td></tr>
+      <tr><td>Use for</td><td>Neural networks, KNN, image pixels</td><td>PCA, linear/logistic regression, SVM</td></tr>
+    </table>
+
+    <figure>
+      <svg viewBox="0 0 720 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Scaling number lines">
+        <g font-family="JetBrains Mono, monospace" font-size="12">
+          <text x="20" y="40" font-family="Fraunces" font-size="14" fill="#5C5345">Raw</text>
+          <line x1="120" y1="36" x2="690" y2="36" stroke="#E2D6C0" stroke-width="2"/>
+          <circle cx="140" cy="36" r="5" fill="#5C5345"/><text x="140" y="22" text-anchor="middle">30k</text>
+          <circle cx="350" cy="36" r="5" fill="#5C5345"/><text x="350" y="22" text-anchor="middle">80k</text>
+          <circle cx="680" cy="36" r="5" fill="#5C5345"/><text x="680" y="22" text-anchor="middle">150k</text>
+
+          <text x="20" y="100" font-family="Fraunces" font-size="14" fill="#0B6B5B">MinMax</text>
+          <line x1="120" y1="96" x2="690" y2="96" stroke="#BEDDD3" stroke-width="2"/>
+          <circle cx="120" cy="96" r="5" fill="#0B6B5B"/><text x="120" y="82" text-anchor="middle">0.0</text>
+          <circle cx="405" cy="96" r="5" fill="#0B6B5B"/><text x="405" y="82" text-anchor="middle">~0.5</text>
+          <circle cx="690" cy="96" r="5" fill="#0B6B5B"/><text x="690" y="82" text-anchor="middle">1.0</text>
+
+          <text x="20" y="160" font-family="Fraunces" font-size="14" fill="#2D5BA8">Standard</text>
+          <line x1="120" y1="156" x2="690" y2="156" stroke="#C5D3EC" stroke-width="2"/>
+          <circle cx="200" cy="156" r="5" fill="#2D5BA8"/><text x="200" y="142" text-anchor="middle">-1.3</text>
+          <circle cx="405" cy="156" r="5" fill="#2D5BA8"/><text x="405" y="142" text-anchor="middle">0</text>
+          <circle cx="610" cy="156" r="5" fill="#2D5BA8"/><text x="610" y="142" text-anchor="middle">+1.7</text>
+        </g>
+      </svg>
+      <figcaption>Same incomes, two scales: MinMax pins them inside [0,1]; Standard centres them around 0.</figcaption>
+    </figure>
+
+    <div class="box key">
+      <span class="tag"><span class="ico">🔑</span> Golden rule</span>
+      <p><strong>Fit the scaler on the training data only</strong>, then apply it to the test data. Fitting on
+      everything leaks information about the test set into training.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 9 -->
+  <section id="split">
+    <span class="sec-num">SECTION 09</span>
+    <h2>Train–test split</h2>
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — studying vs the real exam</span>
+      <p>The <strong>training set</strong> is your textbook and practice problems. The <strong>test set</strong> is the
+      sealed final exam you only see once. If you've secretly seen the exam while studying, a high score proves
+      nothing — that's <em>data leakage</em>. Keep the test set untouched until the very end.</p>
+    </div>
+    <p>A common split is 80% train / 20% test (sometimes a third <strong>validation</strong> slice for tuning).</p>
+<pre><span class="k">from</span> sklearn.model_selection <span class="k">import</span> train_test_split
+X_train, X_test, y_train, y_test = <span class="f">train_test_split</span>(
+    X, y, test_size=<span class="k">0.2</span>, random_state=<span class="k">42</span>)</pre>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 10 -->
+  <section id="eda">
+    <span class="sec-num">SECTION 10</span>
+    <h2>EDA &amp; class imbalance</h2>
+    <p><strong>Exploratory Data Analysis</strong> is "getting to know your data" before modelling — checking shape,
+    spotting missing values &amp; duplicates, visualising distributions, and finding correlations and outliers.</p>
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — a doctor's check-up</span>
+      <p>Before prescribing treatment (the model), a good doctor runs tests and asks questions (EDA). You don't
+      operate blind — you understand the patient first.</p>
+    </div>
+
+    <h3>Class imbalance — the lopsided dataset</h3>
+    <p>If 99% of transactions are legitimate and 1% are fraud, a lazy model can predict "always legit" and be
+    99% accurate while catching <em>zero</em> fraud. Accuracy lies on imbalanced data.</p>
+    <div class="grid g2">
+      <div class="card">
+        <p class="ct">Oversampling (e.g. SMOTE)</p>
+        <p>Create more of the rare class — generate synthetic minority examples to balance things out.</p>
+      </div>
+      <div class="card amber">
+        <p class="ct">Undersampling</p>
+        <p>Remove some of the majority class. Balances the data but risks throwing away useful information.</p>
+      </div>
+    </div>
+    <div class="box key">
+      <span class="tag"><span class="ico">🔑</span> Detect imbalance with</span>
+      <p>Class-distribution counts, bar charts, the Imbalance Ratio, and metrics that survive imbalance:
+      <strong>precision, recall, F1-score, ROC-AUC</strong> — not raw accuracy.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 11 -->
+  <section id="fe">
+    <span class="sec-num">SECTION 11</span>
+    <h2>Feature engineering</h2>
+    <p>Feature engineering = <strong>refining raw data into better signals</strong> by creating or reshaping
+    features so the model learns more easily.</p>
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — a great chef's prep</span>
+      <p>Two cooks get the same groceries. The amateur boils them whole. The chef minces the garlic, zests the
+      lemon, toasts the spices — same ingredients, far better dish. Feature engineering is that prep work, and
+      it often beats a fancier algorithm.</p>
+    </div>
+    <div class="box example">
+      <span class="tag"><span class="ico">💡</span> Example — fraud detection</span>
+      <p>Raw data has individual transactions. A <em>derived</em> feature like <strong>"number of high-value
+      transactions in the past week"</strong> is a far stronger fraud signal than any single transaction alone.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 12 -->
+  <section id="selection">
+    <span class="sec-num">SECTION 12</span>
+    <h2>Feature selection — keep only what matters</h2>
+    <p>More features isn't always better; irrelevant ones add noise and overfitting. Feature selection picks the
+    most useful variables. Three families:</p>
+    <div class="grid g3">
+      <div class="card">
+        <p class="ct">Filter methods</p>
+        <p>Score features by statistics, ignoring any model. Fast.<br><em>Correlation, Chi-square, Variance threshold.</em></p>
+      </div>
+      <div class="card amber">
+        <p class="ct">Wrapper methods</p>
+        <p>Train the model on different feature subsets and keep what performs best. Slower, more accurate.<br>
+        <em>Forward selection, Backward elimination, RFE.</em></p>
+      </div>
+      <div class="card blue">
+        <p class="ct">Embedded methods</p>
+        <p>Selection happens <em>during</em> training via importance scores.<br>
+        <em>LASSO (L1), tree feature importance, Elastic Net.</em></p>
+      </div>
+    </div>
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — packing a suitcase</span>
+      <p><strong>Filter</strong> = weigh each item alone and toss the heavy useless ones. <strong>Wrapper</strong> = try
+      different packing combos and see which fits best. <strong>Embedded</strong> = a smart suitcase that decides
+      what to keep <em>as you pack</em>.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 13 -->
+  <section id="multicol">
+    <span class="sec-num">SECTION 13</span>
+    <h2>Multicollinearity &amp; VIF</h2>
+    <p><strong>Multicollinearity</strong> = two or more features carry the same information (e.g. "height in cm"
+    and "height in inches"). The model can't tell which deserves the credit, making it unstable.</p>
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — two people telling the same story</span>
+      <p>If two witnesses give identical testimony, the second adds nothing — and it's hard to weigh either one.
+      Redundant features cause the same confusion.</p>
+    </div>
+    <p>We measure it with the <strong>Variance Inflation Factor (VIF)</strong>: <code class="ic">VIF = 1 / (1 − R²)</code>.</p>
+    <table class="tbl">
+      <tr><th>VIF value</th><th>Meaning</th></tr>
+      <tr><td>= 1</td><td>Not correlated — perfect</td></tr>
+      <tr><td>1 – 5</td><td>Moderately correlated (≈2–2.3 is fine)</td></tr>
+      <tr><td>&gt; 5</td><td>Highly correlated — consider dropping a feature</td></tr>
+    </table>
+    <p>A <strong>correlation matrix</strong> heatmap is the quick visual check: values run from −1 (perfect
+    opposite) through 0 (unrelated) to +1 (move together).</p>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 14 -->
+  <section id="transform">
+    <span class="sec-num">SECTION 14</span>
+    <h2>Feature transformations</h2>
+    <div class="grid g3">
+      <div class="card">
+        <p class="ct">Log transform</p>
+        <p>Compresses a long right tail into a more normal shape. ₹30k→10.3, ₹500k→13.1. Tames skew &amp; outliers.</p>
+      </div>
+      <div class="card amber">
+        <p class="ct">Binning</p>
+        <p>Turns a continuous number into buckets. Age 23→"Young Adult", 60→"Senior". Simplifies patterns.</p>
+      </div>
+      <div class="card blue">
+        <p class="ct">Interaction features</p>
+        <p>Combine columns to expose hidden relationships, e.g. <code class="ic">CTR = Clicks / Impressions × 100</code>.</p>
+      </div>
+    </div>
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — a map zoom</span>
+      <p>A <strong>log</strong> transform is like zooming out on a map so a huge city and a tiny town both fit on
+      screen — the differences become readable instead of one swamping the other.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 15 -->
+  <section id="dimred">
+    <span class="sec-num">SECTION 15</span>
+    <h2>Dimensionality reduction: PCA &amp; t-SNE</h2>
+    <p>When you have hundreds of features, many overlap. Dimensionality reduction squeezes them into a few
+    that still carry most of the information.</p>
+    <div class="box analogy">
+      <span class="tag"><span class="ico">🧩</span> Analogy — a shadow on the wall</span>
+      <p>A 3-D object casts a 2-D shadow. A <em>good</em> shadow angle still lets you recognise the object while
+      using fewer dimensions. PCA finds that best angle — the directions where the data varies the most.</p>
+    </div>
+    <table class="tbl">
+      <tr><th></th><th>PCA</th><th>t-SNE</th></tr>
+      <tr><td>Type</td><td>Linear</td><td>Non-linear</td></tr>
+      <tr><td>Main use</td><td>Compress features, speed up models</td><td><strong>Visualising</strong> high-dim data in 2-D</td></tr>
+      <tr><td>Output</td><td>Uncorrelated components, ranked by variance</td><td>Pretty clusters (don't read distances literally)</td></tr>
+    </table>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 16 -->
+  <section id="demos">
+    <span class="sec-num">SECTION 16</span>
+    <h2>The three hands-on demos</h2>
+    <p>Each demo ties a concept above to runnable code. Here's the storyline of each plus the key takeaway.</p>
+
+    <h3>🧪 Demo 1 — Missing values &amp; outliers</h3>
+    <p><em>Scenario:</em> a retailer's <code class="ic">customer_purchase_behavior.csv</code> has missing incomes and
+    suspicious giant purchases.</p>
+<pre><span class="k">import</span> pandas <span class="k">as</span> pd, numpy <span class="k">as</span> np
+df = pd.<span class="f">read_csv</span>(<span class="s">"customer_purchase_behavior.csv"</span>)
+
+<span class="c"># 1) Impute missing Income with median (reassign — see the warning above!)</span>
+df[<span class="s">'Income'</span>] = df[<span class="s">'Income'</span>].<span class="f">fillna</span>(df[<span class="s">'Income'</span>].<span class="f">median</span>())
+
+<span class="c"># 2) Detect outliers with IQR</span>
+<span class="k">def</span> <span class="f">iqr_bounds</span>(s):
+    Q1, Q3 = s.<span class="f">quantile</span>(.25), s.<span class="f">quantile</span>(.75)
+    IQR = Q3 - Q1
+    <span class="k">return</span> Q1 - <span class="k">1.5</span>*IQR, Q3 + <span class="k">1.5</span>*IQR
+
+<span class="c"># 3) Cap (clip) outliers instead of deleting rows</span>
+<span class="k">for</span> col <span class="k">in</span> [<span class="s">'PurchaseAmount'</span>, <span class="s">'TransactionsPerMonth'</span>]:
+    low, high = <span class="f">iqr_bounds</span>(df[col])
+    df[col] = df[col].<span class="f">clip</span>(low, high)</pre>
+    <div class="box key"><span class="tag"><span class="ico">🔑</span> Takeaway</span>
+      <p>Median for skewed gaps, IQR to find outliers, clip to keep the row but remove the extreme.
+      And reassign your <code class="ic">fillna</code> — don't trust <code class="ic">inplace</code> on a column.</p></div>
+
+    <h3>🧪 Demo 2 — Scaling with StandardScaler &amp; MinMaxScaler</h3>
+    <p><em>Scenario:</em> loan eligibility, where Income (~30k–150k), LoanAmount, CreditScore (300–850) and
+    DebtToIncome (0–1) live on wildly different scales.</p>
+<pre><span class="k">from</span> sklearn.preprocessing <span class="k">import</span> StandardScaler, MinMaxScaler
+nums = [<span class="s">"Income"</span>, <span class="s">"LoanAmount"</span>, <span class="s">"CreditScore"</span>, <span class="s">"DebtToIncomeRatio"</span>]
+
+std = <span class="f">StandardScaler</span>().<span class="f">fit_transform</span>(df[nums])   <span class="c"># mean 0, var 1</span>
+mm  = <span class="f">MinMaxScaler</span>().<span class="f">fit_transform</span>(df[nums])     <span class="c"># range 0..1</span></pre>
+    <div class="box key"><span class="tag"><span class="ico">🔑</span> Takeaway</span>
+      <p>Standard → centred &amp; outlier-robust (regression, PCA). MinMax → bounded 0–1 (neural nets, KNN).
+      Both make features comparable so none dominates by sheer magnitude.</p></div>
+
+    <h3>🧪 Demo 3 — One-Hot Encoding categories</h3>
+    <p><em>Scenario:</em> customer segmentation with text columns <em>Region, ProductCategory, MembershipType</em>.</p>
+<pre><span class="k">from</span> sklearn.preprocessing <span class="k">import</span> OneHotEncoder
+cat = [<span class="s">"Region"</span>, <span class="s">"ProductCategory"</span>, <span class="s">"MembershipType"</span>]
+
+enc = <span class="f">OneHotEncoder</span>(drop=<span class="s">"first"</span>, handle_unknown=<span class="s">"ignore"</span>)
+encoded = enc.<span class="f">fit_transform</span>(df[cat]).<span class="f">toarray</span>()
+
+out = pd.<span class="f">DataFrame</span>(encoded, columns=enc.<span class="f">get_feature_names_out</span>(cat))
+df_final = pd.<span class="f">concat</span>([df.<span class="f">drop</span>(columns=cat), out], axis=<span class="k">1</span>)</pre>
+    <div class="box key"><span class="tag"><span class="ico">🔑</span> Takeaway</span>
+      <p><code class="ic">drop="first"</code> dodges the dummy-variable trap; <code class="ic">handle_unknown="ignore"</code>
+      keeps the pipeline from crashing when a brand-new category shows up at prediction time.</p></div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 17 -->
+  <section id="cheat">
+    <span class="sec-num">SECTION 17</span>
+    <h2>One-page cheat sheet</h2>
+    <table class="tbl">
+      <tr><th>Problem</th><th>Go-to tool</th><th>One-line reason</th></tr>
+      <tr><td>Missing numeric (skewed)</td><td>Median imputation</td><td>Outliers don't move the median</td></tr>
+      <tr><td>Missing categorical</td><td>Mode imputation</td><td>Most frequent category</td></tr>
+      <tr><td>Find outliers</td><td>IQR or Z-score</td><td>IQR is robust; Z-score for normal data</td></tr>
+      <tr><td>Keep but tame outliers</td><td>Clipping / Winsorize</td><td>Cap to the fence value</td></tr>
+      <tr><td>Unordered category → number</td><td>One-Hot (drop first)</td><td>No fake ranking, no dummy trap</td></tr>
+      <tr><td>Ordered category → number</td><td>Label / Ordinal encoding</td><td>Order is meaningful</td></tr>
+      <tr><td>Features on different scales</td><td>Standard or MinMax scaler</td><td>Fair weighting</td></tr>
+      <tr><td>Skewed feature</td><td>Log transform</td><td>Pulls in the long tail</td></tr>
+      <tr><td>Redundant features</td><td>Check VIF / correlation</td><td>VIF &gt; 5 = drop one</td></tr>
+      <tr><td>Too many features</td><td>Feature selection / PCA</td><td>Less noise, faster, less overfit</td></tr>
+      <tr><td>Rare class (fraud)</td><td>SMOTE + F1/ROC-AUC</td><td>Accuracy lies on imbalance</td></tr>
+    </table>
+  </section>
+
+  <hr class="rule">
+
+  <!-- 18 -->
+  <section id="quiz">
+    <span class="sec-num">SECTION 18</span>
+    <h2>Self-check — quiz yourself</h2>
+    <p>Click each question to reveal the answer. Try to answer <em>before</em> peeking!</p>
+
+    <details class="q"><summary>1. Customer income has a few billionaires. Mean or median to fill gaps — and why?</summary>
+      <div class="ans"><strong>Median.</strong> Income is right-skewed; a few huge values inflate the mean so it no
+      longer represents a typical customer. The median ignores how extreme the extremes are.</div></details>
+
+    <details class="q"><summary>2. Why is Label-encoding "City" (Mumbai=1, Delhi=2, Pune=3) usually a bad idea?</summary>
+      <div class="ans">It invents a fake order/magnitude — the model would think Pune &gt; Delhi &gt; Mumbai and that
+      Mumbai+Mumbai = Delhi. Cities have no natural ranking, so use One-Hot Encoding.</div></details>
+
+    <details class="q"><summary>3. A fraud model is 99% accurate but catches no fraud. What's wrong?</summary>
+      <div class="ans"><strong>Class imbalance.</strong> 99% of rows are "not fraud," so "always predict not-fraud"
+      scores 99%. Use precision/recall/F1/ROC-AUC and rebalance with SMOTE or undersampling.</div></details>
+
+    <details class="q"><summary>4. When do you prefer StandardScaler over MinMaxScaler?</summary>
+      <div class="ans">When the data has outliers or you're using PCA / linear &amp; logistic regression / SVM.
+      Standardization is more robust to extremes; MinMax can get squashed by a single huge value.</div></details>
+
+    <details class="q"><summary>5. IQR is 20 (Q1=40, Q3=60). Is a value of 95 an outlier?</summary>
+      <div class="ans">Upper fence = Q3 + 1.5·IQR = 60 + 30 = <strong>90</strong>. Since 95 &gt; 90, <strong>yes</strong>, it's an outlier.</div></details>
+
+    <details class="q"><summary>6. Two features have VIF = 8. What does that tell you, and what might you do?</summary>
+      <div class="ans">VIF &gt; 5 means they're highly correlated (multicollinearity) and carry redundant info.
+      Consider dropping one, combining them, or using PCA.</div></details>
+
+    <details class="q"><summary>7. Why fit the scaler/encoder on training data only?</summary>
+      <div class="ans">To avoid <strong>data leakage</strong>. Fitting on the test set lets information about it sneak into
+      training, giving falsely optimistic scores that won't hold in the real world.</div></details>
+  </section>
+
+  <div class="box analogy" style="margin-top:34px;">
+    <span class="tag"><span class="ico">🎓</span> The 30-second recap</span>
+    <p>Clean it (missing → impute, outliers → IQR + clip) · make it numeric &amp; fair (encode + scale) ·
+    split it honestly (train/test) · explore it (EDA, fix imbalance) · sharpen it (feature engineering,
+    selection, transforms, PCA). Get this prep right and the model almost trains itself.</p>
+  </div>
+
+  </main>
+</div>
+</div>
+
+<footer>
+  ML Module 1 · Data Preprocessing &amp; Feature Engineering — study notes ·
+  Built from the module deck &amp; Demos 1–3
+</footer>
+
+<script>
+  // reading progress
+  const bar = document.getElementById('progress');
+  const onScroll = () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+  };
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  // active TOC highlighting
+  const links = [...document.querySelectorAll('nav.toc a')];
+  const map = {};
+  links.forEach(a => { const id = a.getAttribute('href').slice(1); map[id] = a; });
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const a = map[e.target.id];
+        if (a) a.classList.add('active');
+      }
+    });
+  }, {rootMargin: '-20% 0px -70% 0px', threshold: 0});
+  document.querySelectorAll('main section[id]').forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
